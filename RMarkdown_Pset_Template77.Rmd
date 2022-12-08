@@ -1,0 +1,277 @@
+---
+title: "[Replace with Problem Set Title/Number]"
+author: "[Replace with your name]"
+subtitle: MGSC 310 Problem Set Template
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+---
+
+```{r setup, include=FALSE}
+
+# Please leave this code chunk as is. It makes some slight formatting changes to alter the output to be more aesthetically pleasing. 
+
+library(knitr)
+
+# Change the number in set seed to your own favorite number
+set.seed(1818)
+options(width=70)
+options(scipen=99)
+
+
+# this sets text outputted in code chunks to small
+opts_chunk$set(tidy.opts=list(width.wrap=50),tidy=TRUE, size = "vsmall")  
+opts_chunk$set(message = FALSE,                                          
+               warning = FALSE,
+               # "caching" stores objects in code chunks and only rewrites if you change things
+               cache = FALSE,                               
+               # automatically downloads dependency files
+               autodep = TRUE,
+               # 
+               cache.comments = FALSE,
+               # 
+               collapse = TRUE,
+               # change fig.width and fig.height to change the code height and width by default
+               fig.width = 5.5,  
+               fig.height = 4.5,
+               fig.align='center')
+
+
+```
+
+```{r setup-2}
+
+# Always print this out before your assignment
+sessionInfo()
+getwd()
+
+```
+
+
+<!-- ### start answering your problem set here -->
+<!-- You may export your homework in either html or pdf, with the former usually being easier. 
+     To export or compile your Rmd file: click above on 'Knit' then 'Knit to HTML' -->
+<!-- Be sure to submit both your .Rmd file and the compiled .html or .pdf file for full credit -->
+
+install.packages('vtable')
+
+```{r setup-3}
+
+# load all your libraries in this chunk 
+library('tidyverse')
+library("partykit")
+library('vtable')
+
+library("PerformanceAnalytics")
+library("rpart")
+library("rpart.plot")
+library('dplyr')
+
+
+library("randomForest")
+
+library("rsample")
+library("randomForestExplainer")
+
+library("DALEX")
+library("pdp")
+
+library("visNetwork")
+library("sparkline")
+
+library("ggplot2")
+library("ggridges")
+library("lubridate")
+# note, do not run install.packages() inside a code chunk. install them in the console outside of a code chunk. 
+
+```
+
+
+
+## Question 1
+
+1a) Text response to part a. 
+
+```{r}
+fifa <- read.csv("../datasets/international_matches.csv")
+
+# Make variable for total goals scored in a game
+fifa_df <- fifa %>%
+    mutate(total_goals = (fifa$home_team_score + fifa$away_team_score))
+
+# Mutated date variable, arranged by current
+fifa_current <- fifa_df %>%
+    mutate(neutral_location = as.logical(neutral_location)) %>%
+    arrange(desc(date))
+
+# Creating home and away team tables
+home_rank <- fifa_current %>%
+    select(date, home_team, home_team_score, away_team_score, home_team_continent,
+        home_team_fifa_rank, home_team_total_fifa_points, home_team_score,
+        tournament, neutral_location, home_team_result, home_team_goalkeeper_score,
+        home_team_mean_defense_score, home_team_mean_midfield_score, home_team_mean_offense_score) %>%
+    rename(country = home_team, team_score = home_team_score, opponent_score = away_team_score,
+        country_rank = home_team_fifa_rank, continent = home_team_continent,
+        fifa_points = home_team_total_fifa_points, score = home_team_score,
+        tournament = tournament, neutral_location = neutral_location, home_team_result = home_team_result,
+        goalkeeper_score = home_team_goalkeeper_score, defense_score = home_team_mean_defense_score,
+        midfield_score = home_team_mean_midfield_score, offense_score = home_team_mean_offense_score)
+
+away_rank <- fifa_current %>%
+    select(date, away_team, away_team_score, home_team_score, away_team_continent,
+        away_team_fifa_rank, away_team_total_fifa_points, away_team_score,
+        tournament, neutral_location, home_team_result, away_team_goalkeeper_score,
+        away_team_mean_defense_score, away_team_mean_midfield_score, away_team_mean_offense_score) %>%
+    rename(country = away_team, team_score = away_team_score, opponent_score = home_team_score,
+        country_rank = away_team_fifa_rank, continent = away_team_continent,
+        fifa_points = away_team_total_fifa_points, score = away_team_score,
+        tournament = tournament, neutral_location = neutral_location, home_team_result = home_team_result,
+        goalkeeper_score = away_team_goalkeeper_score, defense_score = away_team_mean_defense_score,
+        midfield_score = away_team_mean_midfield_score, offense_score = away_team_mean_offense_score)
+
+home_rank <- home_rank %>%
+    mutate(home_away = "H")
+away_rank <- away_rank %>%
+    mutate(home_away = "A")
+
+# Combining home and away tables
+ranking_all <- drop_na(rbind(home_rank, away_rank))
+
+# Mutating variables
+ranking_all <- ranking_all %>%
+    mutate(team = as.factor(country), tournament = as.factor(tournament),
+        neutral_location = as.logical(neutral_location), home_away = as.factor(home_away),
+        continent = as.factor(continent), country_rank = as.factor(country_rank),
+        home_team = as.logical(ifelse(home_away == "H", "TRUE", "FALSE")),
+        offense_score = as.numeric(offense_score), team_win = as.logical(ifelse(score >
+            opponent_score, "TRUE", "FALSE")))
+
+# Create train and test sets
+ranking_all_split <- initial_split(ranking_all, prop = 0.75)
+
+ranking_train <- training(ranking_all_split)
+ranking_test <- testing(ranking_all_split)
+
+# Creating table w/ home and away that also includes null values for
+# summaries
+ranking_all_na <- rbind(home_rank, away_rank)
+
+ranking_all_na <- ranking_all_na %>%
+    mutate(team = as.factor(country), tournament = as.factor(tournament),
+        neutral_location = as.factor(neutral_location))
+```
+
+
+1b) Response to part b. 
+
+```{r}
+
+dim(ranking_all)
+st(ranking_all_na)
+
+
+```
+
+Average amount of goals scored in World Cup match: 2.67
+Average FIFA ranking per country: 79.33
+
+
+## Question 2
+
+
+2b) Response to part b. 
+```{r}
+
+ranking_all_nn <- ranking_all %>% filter(neutral_location == FALSE)
+
+ggplot(data = ranking_all_nn, aes(x="", y=home_team_result, fill=home_team_result)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0)
+
+```
+
+```{r}
+
+# Only keep world cup (including qualifier) matches
+
+world_cup_t <- ranking_train %>%
+    filter(grepl("FIFA World Cup", tournament))
+world_cup_s <- ranking_test %>%
+    filter(grepl("FIFA World Cup", tournament))
+
+
+```
+
+```{r}
+world_cup_t <- with(ranking_train, ranking_train[(date >= "2018-01-01"),
+    ])
+
+world_cup_2022_16_t <- world_cup_t[world_cup_t$team %in% c("Ecuador", "Senegal",
+    "Netherlands", "England", "USA", "Argentina", "Poland", "France", "Australia",
+    "Spain", "Japan", "Morocco", "Croatia", "Brazil", "Switzerland", "Portugal"),
+    ]
+
+world_cup_s <- with(ranking_test, ranking_test[(date >= "2018-01-01"),
+    ])
+
+world_cup_2022_16_s <- world_cup_s[world_cup_s$team %in% c("Ecuador", "Senegal",
+    "Netherlands", "England", "USA", "Argentina", "Poland", "France", "Australia",
+    "Spain", "Japan", "Morocco", "Croatia", "Brazil", "Switzerland", "Portugal"),
+    ]
+
+world_cup_2022_16_t <- world_cup_2022_16_t %>%
+    mutate(home_away= as.factor(home_away), 
+           team_win = as.factor(team_win),
+           team = as.factor(team),
+           goalkeeper_score = as.numeric(goalkeeper_score),
+           defense_score = as.numeric(defense_score), 
+           midfield_score = as.numeric(midfield_score),
+           offense_score = as.numeric(offense_score))
+world_cup_2022_16_s <- world_cup_2022_16_s %>%
+    mutate(home_away= as.factor(home_away), 
+           team_win = as.factor(team_win),
+           team = as.factor(team),
+           goalkeeper_score = as.numeric(goalkeeper_score),
+           defense_score = as.numeric(defense_score), 
+           midfield_score = as.numeric(midfield_score),
+           offense_score = as.numeric(offense_score))
+library("partykit")
+dt <- ctree(team_win ~ country_rank + fifa_points +  goalkeeper_score + defense_score +
+                         midfield_score + offense_score + home_away+ team,
+                       data = world_cup_2022_16_t)
+print(dt)
+
+```
+
+```{r}
+plot(dt)
+
+
+```
+
+```{r}
+
+dt2 <- ctree(team_win ~ country_rank + fifa_points +  goalkeeper_score + defense_score +
+                         midfield_score + offense_score + home_away+ team,
+             data = world_cup_2022_16_t,
+             control = partykit::ctree_control(alpha=0.5,
+                                               minbucket=10))
+plot(dt2)
+
+```
+
+```{r}
+library('rpart')
+dt_rpart <- rpart(team_win ~ country_rank + fifa_points +  goalkeeper_score + defense_score +
+                         midfield_score + offense_score + home_away+ team,
+                  data = world_cup_2022_16_t,
+                  control = list(cp = 0,
+                                 minsplit = 10,
+                                 maxdepth = 10))
+
+dt_rpart$ctable
+plotcp(dt_rpart)
+
+```
+
