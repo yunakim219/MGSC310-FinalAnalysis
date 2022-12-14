@@ -1,7 +1,7 @@
 ---
-title: "[Replace with Problem Set Title/Number]"
-author: "[Replace with your name]"
-subtitle: MGSC 310 Problem Set Template
+title: "MGSC310 Final Analysis"
+author: "Yuna Kim"
+subtitle: Predictive Model - Regression Tree
 output:
   html_document:
     df_print: paged
