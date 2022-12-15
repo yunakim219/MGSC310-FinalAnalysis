@@ -1,0 +1,184 @@
+---
+title: "Final Project"
+author: "Khenny Norgay"
+subtitle: MGSC 310 Problem Set Template
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+---
+
+```{r setup, include=FALSE}
+
+# Please leave this code chunk as is. It makes some slight formatting changes to alter the output to be more aesthetically pleasing. 
+
+library(knitr)
+
+# Change the number in set seed to your own favorite number
+set.seed(1818)
+options(width=70)
+options(scipen=99)
+
+
+# this sets text outputted in code chunks to small
+opts_chunk$set(tidy.opts=list(width.wrap=50),tidy=TRUE, size = "vsmall")  
+opts_chunk$set(message = FALSE,                                          
+               warning = FALSE,
+               # "caching" stores objects in code chunks and only rewrites if you change things
+               cache = FALSE,                               
+               # automatically downloads dependency files
+               autodep = TRUE,
+               # 
+               cache.comments = FALSE,
+               # 
+               collapse = TRUE,
+               # change fig.width and fig.height to change the code height and width by default
+               fig.width = 5.5,  
+               fig.height = 4.5,
+               fig.align='center')
+
+
+```
+
+```{r setup-2}
+
+# Always print this out before your assignment
+sessionInfo()
+getwd()
+
+```
+
+
+<!-- ### start answering your problem set here -->
+<!-- You may export your homework in either html or pdf, with the former usually being easier. 
+     To export or compile your Rmd file: click above on 'Knit' then 'Knit to HTML' -->
+<!-- Be sure to submit both your .Rmd file and the compiled .html or .pdf file for full credit -->
+
+
+```{r setup-3}
+
+# load all your libraries in this chunk 
+library('tidyverse')
+library("partykit")
+library('vtable')
+
+library("PerformanceAnalytics")
+library("rpart")
+library("rpart.plot")
+library('dplyr')
+
+
+library("randomForest")
+
+library("rsample")
+library("randomForestExplainer")
+
+library("DALEX")
+library("pdp")
+
+library("visNetwork")
+library("sparkline")
+
+library("ggplot2")
+library("ggridges")
+
+# note, do not run install.packages() inside a code chunk. install them in the console outside of a code chunk. 
+
+```
+
+
+
+## Question 1
+Load datasets
+1a) Text response to part a. 
+
+```{r}
+
+fifa_df <- read_csv("international_matches.csv")
+
+fifa_df <- fifa_df %>% 
+  mutate(total_goals = (fifa_df$home_team_score + fifa_df$away_team_score)) 
+
+fifa_current <- fifa_df %>% 
+  mutate(date = ymd(date), neutral_location = as.logical(neutral_location)) %>% 
+  arrange(desc(date)) 
+
+home_rank <- fifa_current %>% 
+  select(date, home_team, home_team_score, away_team_score, home_team_continent, home_team_fifa rank, home_team_total_fifa_points, home_team_score, tournament, neutral_location, home_team_result, home_team_goalkeeper_score, home_team
+
+summary(fifa_df)
+
+regression1 <- lm(home_team_fifa_rank ~ home_team_result, 
+                  data = fifa_df)
+summary(regression1)
+
+regression2 <- lm(home_team_fifa_rank ~ home_team_result + home_team_goalkeeper_score + home_team_mean_defense_score + home_team_mean_offense_score + home_team_mean_midfield_score + total_goals,
+                  data = fifa_df)
+
+summary(regression2)
+
+regression3 <- lm(away_team_fifa_rank ~ away_team_goalkeeper_score + away_team_mean_defense_score + away_team_mean_offense_score + away_team_mean_midfield_score + total_goals,
+                  data = fifa_df)
+
+summary(regression3)
+```
+```{r}
+getwd()
+
+
+
+
+```
+
+
+
+
+1b) Response to part b. 
+
+```{r}
+
+# code for part b
+
+```
+
+etc...
+
+
+## Question 2
+
+2a) Response to part a. 
+
+
+```{r}
+
+# code for 2a
+
+```
+
+
+2b) Response to part b. 
+
+
+```{r}
+
+# code for 2b
+
+```
+
+
+## Question 3
+
+Here is only text for question 3. 
+
+If you want to add a hypertext link [you can do so](http://www.chapman.edu)
+
+- If you want to add bullets
+  - You
+  - Can 
+  - Do 
+  - It
+
+If you want to add an image [follow this guide](https://stackoverflow.com/questions/25166624/insert-picture-table-in-r-markdown)
+
+
+
